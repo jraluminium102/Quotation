@@ -2037,23 +2037,37 @@ function genQuote(keepNo){
     items.forEach(it => { gTotal += it.r.sell*it.qty; });
     const isGH = /กั้น|กั้นห้องกระจก|GH/i.test(_gl);
     if(isGH){ gTotal += 5000; }
+    // รวบรวมบรรทัดรายละเอียด (det) ของทุกบาน แล้วตัดซ้ำ (dedupe) คงลำดับเดิม
+    // — บรรทัด OPTION / หมายเหตุ ห้าม dedupe/ห้ามรวม ให้คงไว้ตามเดิม
+    const matLines=[]; const matSeen=new Set(); const specialLines=[];
+    items.forEach(it => { const d=itemDetail(it); if(d.det&&d.det!=='-'){
+      d.det.split(/\n| · /).forEach(g => { const t=g.replace(/^- /,'').trim(); if(!t) return;
+        if(t.startsWith('OPTION')||t.startsWith('หมายเหตุ')){ specialLines.push(t); }
+        else if(!matSeen.has(t)){ matSeen.add(t); matLines.push(t); }
+      });
+    }});
     let content = '<div style="font-weight:700;color:#1F2937;">'+_gl+'</div>';
     if(window.qSplit){
       items.forEach(it => { const d=itemDetail(it); const pos=it.position?(' ('+it.position+')'):''; const ov=it.r.overridden?' ✎':'';
-        content += '<div style="margin:2px 0 0 12px;display:flex;justify-content:space-between;font-size:13px;"><span>↳ '+d.prodName+pos+'</span><span style="font-weight:600;">'+fmt(it.r.sell*it.qty)+ov+'</span></div>';
-        (it.r.addonLines||[]).forEach(function(a){ content += '<div style="margin:1px 0 0 24px;display:flex;justify-content:space-between;font-size:12px;color:#666;"><span>· '+a.n+'</span><span>'+fmt(a.p)+'</span></div>'; }); });
-      if(isGH) content += '<div style="margin:2px 0 0 12px;display:flex;justify-content:space-between;font-size:12px;color:#666;"><span>↳ ค่าทำชุด กั้นห้องกระจก</span><span>5,000</span></div>';
-      items.forEach(it => { const d=itemDetail(it); if(d.det&&d.det!=='-'){ content += '<div style="margin:1px 0 0 18px;color:#6B7280;font-size:12px;">- '+d.det+'</div>'; } });
+        content += '<div style="margin:2px 0 0 8px;display:flex;justify-content:space-between;font-size:13px;"><span>↳ '+d.prodName+pos+'</span><span style="font-weight:600;">'+fmt(it.r.sell*it.qty)+ov+'</span></div>';
+        (it.r.addonLines||[]).forEach(function(a){ content += '<div style="margin:1px 0 0 20px;display:flex;justify-content:space-between;font-size:12px;color:#666;"><span>· '+a.n+'</span><span>'+fmt(a.p)+'</span></div>'; }); });
+      if(isGH) content += '<div style="margin:2px 0 0 8px;display:flex;justify-content:space-between;font-size:12px;color:#666;"><span>↳ ค่าทำชุด กั้นห้องกระจก</span><span>5,000</span></div>';
+      if(matLines.length){ content += '<div style="margin-top:6px;font-weight:600;color:#1F2937;">รายละเอียดงาน</div>';
+        matLines.forEach(t => { content += '<div style="margin:1px 0 0 8px;color:#1F2937;font-size:13px;">- '+t+'</div>'; }); }
     } else {
       const names = items.map(it => { const d=itemDetail(it); const pos=it.position?(' '+it.position):''; const an=(it.r.addonLines||[]).map(function(a){return a.n;}); return d.prodName+pos+(an.length?' (มี'+an.join(', ')+')':''); });
       content += '<div style="margin:4px 0 0 8px;color:#1F2937;">- '+names.join(' พร้อม ')+'</div>';
-      content += '<div style="margin-top:6px;font-weight:600;color:#1F2937;">รายละเอียดงาน</div>';
-      items.forEach(it => { const d=itemDetail(it); if(d.det&&d.det!=='-'){ d.det.split(/ · /).forEach(g => { if(g.trim()) content += '<div style="margin:1px 0 0 8px;color:#1F2937;font-size:13px;">- '+g.replace(/^- /,'')+'</div>'; }); } });
+      if(matLines.length){ content += '<div style="margin-top:6px;font-weight:600;color:#1F2937;">รายละเอียดงาน</div>';
+        matLines.forEach(t => { content += '<div style="margin:1px 0 0 8px;color:#1F2937;font-size:13px;">- '+t+'</div>'; }); }
       if(isGH) content += '<div style="margin:6px 0 0 8px;color:#666;font-size:12px;">+ ค่าทำชุด กั้นห้องกระจก 5,000 (วาดแบบ+ติดตั้ง)</div>';
     }
-    if(items[0]&&items[0].groupOptText){ const _ot=items[0].groupOptText, _od=items[0].groupOptDelta; content += '<div style="margin-top:6px;color:#B3151D;font-size:13px;">OPTION : '+_ot+(_od?(' (ราคา'+(_od>0?'+':'-')+fmt(Math.abs(_od))+' บาท)'):'')+'</div>'; }
+    // OPTION / หมายเหตุ เฉพาะของแต่ละบาน (คงไว้ตามเดิม ไม่ dedupe)
+    specialLines.forEach(t => { content += '<div style="margin-top:4px;margin-left:8px;color:'+(t.startsWith('OPTION')?'#B3151D':'#6B7280')+';font-size:13px;">'+t+'</div>'; });
+    if(items[0]&&items[0].groupOptText){ const _ot=items[0].groupOptText, _od=items[0].groupOptDelta; content += '<div style="margin-top:6px;margin-left:8px;color:#B3151D;font-size:13px;">OPTION : '+_ot+(_od?(' (ราคา'+(_od>0?'+':'-')+fmt(Math.abs(_od))+' บาท)'):'')+'</div>'; }
     rowIdx++; subtotal += gTotal;
-    rows += '<tr><td style="vertical-align:top;text-align:center;">'+rowIdx+'</td><td style="vertical-align:top;text-align:left;padding:8px;">'+content+'</td><td class="r" style="vertical-align:top;">1 ชุด</td><td class="r" style="vertical-align:top;">—</td><td class="r" style="vertical-align:top;">'+fmt(gTotal)+'</td></tr>';
+    // ⚠ ยังบวก gTotal เข้า subtotal เหมือนเดิม — แก้เฉพาะการแสดงผลในเซลล์ยอดรวม
+    const gTotalCell = window.qSplit ? '—' : fmt(gTotal);
+    rows += '<tr><td style="vertical-align:top;text-align:center;">'+rowIdx+'</td><td style="vertical-align:top;text-align:left;padding:8px;">'+content+'</td><td class="r" style="vertical-align:top;">1 ชุด</td><td class="r" style="vertical-align:top;">—</td><td class="r" style="vertical-align:top;">'+gTotalCell+'</td></tr>';
   });
   // Render ungrouped
   ungrouped.forEach(it => {

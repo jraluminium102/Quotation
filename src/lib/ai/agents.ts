@@ -9,7 +9,16 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// lazy-init: สร้าง client ตอนเรียกใช้จริง (กัน build พังตอนยังไม่มี ANTHROPIC_API_KEY)
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("ยังไม่ได้ตั้งค่า ANTHROPIC_API_KEY");
+    _client = new Anthropic({ apiKey });
+  }
+  return _client;
+}
 
 // ----- Types -----
 
@@ -39,7 +48,7 @@ export async function runAgent(params: {
   systemPrompt: string;
   userMessage: string;
 }): Promise<AgentResult> {
-  const msg = await client.messages.create({
+  const msg = await getClient().messages.create({
     model: "claude-haiku-4-5-20251001", // เร็ว ถูก เหมาะงาน verification
     max_tokens: 1024,
     system: params.systemPrompt,

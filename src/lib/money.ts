@@ -41,3 +41,41 @@ export const lineTotal = (qty: number, unit_price: number) =>
 
 export const baht = (n: number) =>
   (Number(n) || 0).toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+// ============================================================
+// แบ่งงวดชำระอัตโนมัติตามยอดสุทธิ (PRD P0-5)
+// ⏳ Q-2: งวด 4-5 "เหลือ-40k" ตีความว่ากันเงินประกัน 40,000 ไว้งวดสุดท้าย
+//          (รอพี่นัทยืนยันสูตรชัด — ปรับ RETENTION ได้ที่นี่จุดเดียว)
+// ============================================================
+export interface InstallmentPlan {
+  seq: number;
+  label: string;
+  amount: number;
+}
+
+const RETENTION = 40000; // เงินประกันงวดท้าย (4-5 งวด)
+
+export function suggestInstallments(net: number): InstallmentPlan[] {
+  const a = Math.max(0, Math.round(Number(net) || 0));
+  const mk = (parts: number[], labels: string[]): InstallmentPlan[] =>
+    parts.map((amt, i) => ({ seq: i + 1, label: labels[i], amount: amt }));
+
+  if (a <= 100000) {
+    const g1 = Math.round(a * 0.7);
+    return mk([g1, a - g1], ["งวด 1/2 (70%)", "งวด 2/2 (30%)"]);
+  }
+  if (a <= 300000) {
+    const g1 = Math.round(a * 0.4), g2 = Math.round(a * 0.5);
+    return mk([g1, g2, a - g1 - g2], ["งวด 1/3 (40%)", "งวด 2/3 (50%)", "งวด 3/3 (10%)"]);
+  }
+  if (a <= 700000) {
+    const g1 = Math.round(a * 0.35), g2 = Math.round(a * 0.3);
+    const g3 = a - g1 - g2 - RETENTION;
+    return mk([g1, g2, g3, RETENTION],
+      ["งวด 1/4 (35%)", "งวด 2/4 (30%)", "งวด 3/4 (ส่วนที่เหลือ)", "งวด 4/4 (ประกัน 40,000)"]);
+  }
+  const g = Math.round(a * 0.25);
+  const g4 = a - g * 3 - RETENTION;
+  return mk([g, g, g, g4, RETENTION],
+    ["งวด 1/5 (25%)", "งวด 2/5 (25%)", "งวด 3/5 (25%)", "งวด 4/5 (ส่วนที่เหลือ)", "งวด 5/5 (ประกัน 40,000)"]);
+}

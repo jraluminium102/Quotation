@@ -11,6 +11,11 @@ const NAV = [
   { href: "/customers", icon: "users", label: "ทะเบียนลูกค้า" },
   { href: "/quotations", icon: "file", label: "ใบเสนอราคา" },
   { href: "/calculator", icon: "calculator", label: "เครื่องคิดราคา" },
+  { href: "/billing-notes", icon: "banknote", label: "ใบวางบิล" },
+  { href: "/receipts", icon: "receipt", label: "ใบเสร็จ/กำกับภาษี" },
+  { href: "/production-orders", icon: "factory", label: "ใบสั่งผลิต" },
+  { href: "/warranties", icon: "shield", label: "ใบรับประกัน" },
+  { href: "/stock", icon: "boxes", label: "เช็คสต๊อก" },
 ];
 
 export default function Shell({ profile, children }: { profile: Profile; children: React.ReactNode }) {

@@ -10,6 +10,7 @@ const NAV = [
   { href: "/dashboard", icon: "dashboard", label: "Dashboard" },
   { href: "/customers", icon: "users", label: "ทะเบียนลูกค้า" },
   { href: "/quotations", icon: "file", label: "ใบเสนอราคา" },
+  { href: "/calculator", icon: "calculator", label: "เครื่องคิดราคา" },
 ];
 
 export default function Shell({ profile, children }: { profile: Profile; children: React.ReactNode }) {

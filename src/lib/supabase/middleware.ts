@@ -6,11 +6,19 @@ const PUBLIC_PATHS = ["/login", "/auth"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const path = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // ถ้า env ไม่ครบ — อย่าให้ throw จน 500 ทั้งเว็บ (Edge runtime เข้มกว่า Node)
+  // ปล่อยผ่านเพื่อให้หน้า/handler จัดการเอง แทนที่จะล้มทั้งระบบ
+  if (!url || !anon) return response;
+
+  let user = null;
+  try {
+    const supabase = createServerClient(url, anon, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -23,15 +31,13 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-  const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
+    });
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch {
+    // Supabase ไม่พร้อม/เครือข่ายมีปัญหา → ถือว่ายังไม่ login (ไม่ทำให้ 500)
+    user = null;
+  }
 
   // /api/* ปล่อยผ่าน — ให้ route handler ตอบ 401 JSON เอง (ไม่ redirect)
   if (path.startsWith("/api")) return response;

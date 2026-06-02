@@ -23,6 +23,12 @@ export default function QuotationForm({ customers }: { customers: Pick<Customer,
   const [err, setErr] = useState("");
   const [calcCustomer, setCalcCustomer] = useState("");
 
+  type AgentResult = { agentName: string; passed: boolean; issues: string[]; suggestions: string[]; rawOutput: string };
+  type AiReview = { agents: AgentResult[]; verdict: "APPROVE" | "NEEDS_REVISION" | "REJECT" };
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiResult, setAiResult] = useState<AiReview | null>(null);
+  const [aiErr, setAiErr] = useState("");
+
   // รับรายการจากเครื่องคิดราคา (สะพาน) ตอน mount
   useEffect(() => {
     let raw: string | null = null;
@@ -60,6 +66,27 @@ export default function QuotationForm({ customers }: { customers: Pick<Customer,
 
   const setItem = (i: number, k: keyof Item, v: string | number) =>
     setItems(items.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
+
+  async function aiVerify() {
+    setAiErr(""); setAiResult(null);
+    const valid = items.filter((i) => i.name.trim() && Number(i.qty) > 0);
+    if (valid.length === 0) { setAiErr("ต้องมีรายการอย่างน้อย 1 บรรทัดก่อนตรวจ"); return; }
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/ai/verify-quotation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer_id: customerId, issue_date: issueDate, items: valid, vat_rate: vat, discount_pct: disc, wht_rate: wht, note }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAiErr(json.error ?? "ตรวจไม่สำเร็จ"); return; }
+      setAiResult(json.data as AiReview);
+    } catch {
+      setAiErr("เชื่อมต่อ AI ไม่สำเร็จ");
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   async function submit() {
     setErr("");
@@ -183,6 +210,27 @@ export default function QuotationForm({ customers }: { customers: Pick<Customer,
             {t.wht_amt > 0 && <><Row k={`หัก ณ ที่จ่าย ${wht}%`} v={-t.wht_amt} red /><Row k="ยอดรับสุทธิ" v={t.net} bold big /></>}
 
             {err && <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2 mt-3">{err}</p>}
+
+            {/* AI ตรวจก่อนบันทึก (3 agents: DataValidator → BusinessRules → FinalReviewer) */}
+            <button onClick={aiVerify} disabled={aiBusy} className="press w-full mt-4 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "#1f2937" }}>
+              {aiBusy ? "⏳ AI กำลังตรวจ…" : "🤖 ตรวจก่อนบันทึก (AI)"}
+            </button>
+            {aiErr && <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2 mt-2">{aiErr}</p>}
+            {aiResult && (
+              <div className="mt-2 glass-soft rounded-xl p-3 text-sm">
+                <div className="font-bold" style={{ color: aiResult.verdict === "APPROVE" ? "#0f7a38" : aiResult.verdict === "NEEDS_REVISION" ? "#b45309" : "#b3151d" }}>
+                  {aiResult.verdict === "APPROVE" ? "✅ ผ่าน พร้อมบันทึก" : aiResult.verdict === "NEEDS_REVISION" ? "🟡 มีจุดควรปรับ" : "🔴 ควรแก้ก่อนบันทึก"}
+                </div>
+                {aiResult.agents.map((a, i) => (
+                  <div key={i} className="mt-2 pt-2 border-t border-gray-200/60">
+                    <div className="text-xs font-semibold text-ink">{a.agentName} {a.passed ? "✅" : "⚠️"}</div>
+                    {a.rawOutput && <div className="text-xs text-ink-2 mt-0.5">{a.rawOutput}</div>}
+                    {a.issues.map((x, j) => <div key={`i${j}`} className="text-xs" style={{ color: "#b3151d" }}>• {x}</div>)}
+                    {a.suggestions.map((x, j) => <div key={`s${j}`} className="text-xs" style={{ color: "#b45309" }}>○ {x}</div>)}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-4 space-y-2">
               <button onClick={submit} disabled={busy} className="press w-full rounded-xl py-3 text-sm font-semibold text-white bg-brand shadow-brand disabled:opacity-60">

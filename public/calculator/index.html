@@ -303,8 +303,10 @@
     <button type="button" class="btn-prim" onclick="exportQuoteExcel()" style="background:#10803a;">Export Excel</button>
     <button type="button" class="btn-sec" onclick="toggleSplit()" id="splitBtn">แยกราคาแต่ละส่วน</button>
     <button type="button" class="btn-sec" onclick="toggleWatermark()" id="wmBtn">+ ฉบับร่าง</button>
+    <button type="button" class="btn-sec" onclick="aiReviewQuote()" id="aiReviewBtn" style="background:#1f2937;color:#fff;">🤖 AI ตรวจใบเสนอ</button>
   </div>
 </div>
+<div id="aiReviewResult" style="max-width:720px;margin:12px auto 24px;"></div>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
 <script>
@@ -2087,6 +2089,36 @@ function genQuote(keepNo){
 }
 window.qSplitGroups = window.qSplitGroups || {};
 function toggleSplit(){ window.qSplit=!window.qSplit; var b=document.getElementById('splitBtn'); if(b) b.textContent=window.qSplit?'รวมราคา/ชุด':'แยกราคาแต่ละส่วน'; genQuote(true); }
+async function aiReviewQuote(){
+  var box=document.getElementById('quoteContent');
+  var txt=((box&&box.innerText)||'').trim();
+  var out=document.getElementById('aiReviewResult');
+  if(!txt){ alert('ยังไม่มีใบเสนอ — กดสร้างใบเสนอราคาก่อน'); return; }
+  var btn=document.getElementById('aiReviewBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ AI กำลังตรวจ...'; }
+  out.innerHTML='<div style="padding:12px;color:#666;">⏳ กำลังให้ AI ตรวจเทียบใบจริง...</div>';
+  try{
+    var res=await fetch('/api/ai/review-quotation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteText:txt})});
+    var json=await res.json();
+    if(!res.ok){ out.innerHTML='<div style="padding:12px;color:#B3151D;">ตรวจไม่สำเร็จ: '+((json&&json.error)||'')+'</div>'; return; }
+    var d=json.data, v=d.verdict;
+    var vColor=v==='APPROVE'?'#0f7a38':(v==='NEEDS_REVISION'?'#b45309':'#B3151D');
+    var vText=v==='APPROVE'?'✅ ตรงใบจริง พร้อมใช้':(v==='NEEDS_REVISION'?'🟡 ใช้ได้ มีจุดควรปรับ':'🔴 ควรแก้ก่อนส่ง');
+    var html='<div style="border:1px solid #e4e4e7;border-radius:12px;padding:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06);">';
+    html+='<div style="font-weight:700;color:'+vColor+';font-size:15px;">'+vText+'</div>';
+    html+='<div style="color:#444;font-size:13px;margin:4px 0 10px;">'+(d.summary||'')+'</div>';
+    (d.agents||[]).forEach(function(a){
+      html+='<div style="margin-top:10px;padding-top:8px;border-top:1px solid #f0f0f0;"><b style="color:#1f2937;">'+a.agentName+'</b> '+(a.passed?'✅':'⚠️');
+      html+='<div style="font-size:13px;color:#555;margin:2px 0;">'+(a.rawOutput||'')+'</div>';
+      if(a.issues&&a.issues.length){ html+='<div style="font-size:12px;color:#B3151D;">จุดที่ต้องแก้:<ul style="margin:2px 0 0 18px;">'+a.issues.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'; }
+      if(a.suggestions&&a.suggestions.length){ html+='<div style="font-size:12px;color:#b45309;">ข้อแนะนำ:<ul style="margin:2px 0 0 18px;">'+a.suggestions.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'; }
+      html+='</div>';
+    });
+    html+='</div>';
+    out.innerHTML=html;
+  }catch(e){ out.innerHTML='<div style="padding:12px;color:#B3151D;">เกิดข้อผิดพลาด: '+e+'</div>'; }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='🤖 AI ตรวจใบเสนอ'; } }
+}
 function toggleGroupSplit(idx){
   var gn = (window._qGroupKeys||[])[idx];
   if(gn==null) return;

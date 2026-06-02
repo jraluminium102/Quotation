@@ -261,6 +261,7 @@
     <div class="actions">
       <button type="button" class="btn-sec" onclick="resetQuote()">ล้างทั้งหมด</button>
       <button type="button" class="btn-prim" onclick="genQuote()">สร้างใบเสนอราคา</button>
+      <button type="button" class="btn-prim" style="background:#B3151D;" onclick="sendToQuotation()">📤 ส่งไปสร้างใบเสนอราคา</button>
     </div>
     <div class="note">ราคาเป็นการประเมิน ตรวจหน้างานก่อนเสนอจริง · เครื่องคิดทำงานในเครื่อง ไม่ต่อเน็ต</div>
   </section>
@@ -1932,6 +1933,23 @@ function refreshItype(d){
       if(isWin){ const sel2=lbl.querySelector('select'); if(sel2) sel2.value=''; }
     }
   });
+}
+
+function sendToQuotation(){
+  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&it.r.a>0);
+  if(!list.length){ alert('ยังไม่มีรายการที่คำนวณได้'); return; }
+  const items=list.map(it=>{
+    const detail=[it.r.addonLabel, ...(it.r.msgs||[])].filter(Boolean).join(' · ');
+    return { name: it.name||'รายการ', detail: detail, qty: it.qty||1,
+             unit_price: Math.round(it.r.sell), line_total: Math.round(it.r.sell*(it.qty||1)) };
+  });
+  const customer = (document.getElementById('custName')||{}).value || '';
+  const payload={ type:'JR_QUOTE_ITEMS', items: items, customer: customer };
+  if(window.parent && window.parent!==window){ window.parent.postMessage(payload,'*'); }
+  else { // เปิดเต็มจอ (ไม่มี parent) → เก็บ localStorage แล้วพาไป
+    try{ localStorage.setItem('jr_quote_bridge', JSON.stringify(payload)); }catch(e){}
+    window.location.href='/quotations/new?from=calc';
+  }
 }
 
 function genQuote(keepNo){

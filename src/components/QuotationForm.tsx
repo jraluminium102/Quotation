@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "./ui";
 import Icon from "./Icon";
@@ -21,6 +21,40 @@ export default function QuotationForm({ customers }: { customers: Pick<Customer,
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [calcCustomer, setCalcCustomer] = useState("");
+
+  // รับรายการจากเครื่องคิดราคา (สะพาน) ตอน mount
+  useEffect(() => {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem("jr_quote_items") ?? localStorage.getItem("jr_quote_bridge");
+    } catch {
+      raw = null;
+    }
+    if (!raw) return;
+    try {
+      const payload = JSON.parse(raw) as { items?: Array<{ name?: string; detail?: string; qty?: number; unit_price?: number }>; customer?: string };
+      const bridged = (payload.items ?? [])
+        .filter((it) => it && (it.name || it.unit_price))
+        .map<Item>((it) => ({
+          name: String(it.name ?? ""),
+          detail: String(it.detail ?? ""),
+          qty: Number(it.qty) || 1,
+          unit_price: Number(it.unit_price) || 0,
+        }));
+      if (bridged.length) setItems(bridged);
+      if (payload.customer) setCalcCustomer(String(payload.customer));
+    } catch {
+      /* ignore malformed payload */
+    } finally {
+      try {
+        sessionStorage.removeItem("jr_quote_items");
+        localStorage.removeItem("jr_quote_bridge");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
 
   const t = useMemo(() => computeTotals({ items, vat_rate: vat, discount_pct: disc, wht_rate: wht }), [items, vat, disc, wht]);
 
@@ -73,6 +107,11 @@ export default function QuotationForm({ customers }: { customers: Pick<Customer,
             </div>
             {customers.length === 0 && (
               <p className="text-sm text-amber-700 mt-2">ยังไม่มีลูกค้า — ไปเพิ่มที่เมนู “ทะเบียนลูกค้า” ก่อน</p>
+            )}
+            {calcCustomer && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                ลูกค้าจากเครื่องคิดราคา: <strong>{calcCustomer}</strong> — เลือกให้ตรงทะเบียนลูกค้า
+              </p>
             )}
           </Card>
 

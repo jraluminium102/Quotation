@@ -121,6 +121,7 @@
     .qt th,.qt td{padding:4px 6px;font-size:10pt;} .qnote{font-size:9pt;}
     .qtot .l,.qtot .g{font-size:11pt;}
     #ckFab,#ckPanel{display:none !important;}
+    .qtoggle-set{display:none !important;}
     table{page-break-inside:auto;} tr{page-break-inside:avoid;}
   }
   /* Mobile responsive */
@@ -2030,7 +2031,9 @@ function genQuote(keepNo){
     return {prodName, det};
   }
   // Render grouped (ชุดหลายส่วน) — default ประโยคเดียว / qSplit แยกราคา
-  Object.keys(groups).forEach(gn => {
+  window._qGroupKeys = Object.keys(groups);
+  Object.keys(groups).forEach((gn, gIdx) => {
+    const isSplit = window.qSplit || !!window.qSplitGroups[gn];
     const items = groups[gn];
     let gTotal=0;
     const _gl=(items[0]&&items[0].groupLabel&&items[0].groupLabel.trim())||(items[0]?itemDetail(items[0]).prodName:'ชุด');
@@ -2046,8 +2049,8 @@ function genQuote(keepNo){
         else if(!matSeen.has(t)){ matSeen.add(t); matLines.push(t); }
       });
     }});
-    let content = '<div style="font-weight:700;color:#1F2937;">'+_gl+'</div>';
-    if(window.qSplit){
+    let content = '<div style="font-weight:700;color:#1F2937;">'+_gl+'<button type="button" class="qtoggle-set" onclick="toggleGroupSplit('+gIdx+')" style="margin-left:8px;font-size:11px;padding:1px 8px;border:1px solid #B3151D;color:#B3151D;background:#fff;border-radius:6px;cursor:pointer;">'+(isSplit?'รวมราคา':'แยกราคา')+'</button></div>';
+    if(isSplit){
       items.forEach(it => { const d=itemDetail(it); const pos=it.position?(' ('+it.position+')'):''; const ov=it.r.overridden?' ✎':'';
         content += '<div style="margin:2px 0 0 8px;display:flex;justify-content:space-between;font-size:13px;"><span>↳ '+d.prodName+pos+'</span><span style="font-weight:600;">'+fmt(it.r.sell*it.qty)+ov+'</span></div>';
         (it.r.addonLines||[]).forEach(function(a){ content += '<div style="margin:1px 0 0 20px;display:flex;justify-content:space-between;font-size:12px;color:#666;"><span>· '+a.n+'</span><span>'+fmt(a.p)+'</span></div>'; }); });
@@ -2066,7 +2069,7 @@ function genQuote(keepNo){
     if(items[0]&&items[0].groupOptText){ const _ot=items[0].groupOptText, _od=items[0].groupOptDelta; content += '<div style="margin-top:6px;margin-left:8px;color:#B3151D;font-size:13px;">OPTION : '+_ot+(_od?(' (ราคา'+(_od>0?'+':'-')+fmt(Math.abs(_od))+' บาท)'):'')+'</div>'; }
     rowIdx++; subtotal += gTotal;
     // ⚠ ยังบวก gTotal เข้า subtotal เหมือนเดิม — แก้เฉพาะการแสดงผลในเซลล์ยอดรวม
-    const gTotalCell = window.qSplit ? '—' : fmt(gTotal);
+    const gTotalCell = isSplit ? '—' : fmt(gTotal);
     rows += '<tr><td style="vertical-align:top;text-align:center;">'+rowIdx+'</td><td style="vertical-align:top;text-align:left;padding:8px;">'+content+'</td><td class="r" style="vertical-align:top;">1 ชุด</td><td class="r" style="vertical-align:top;">—</td><td class="r" style="vertical-align:top;">'+gTotalCell+'</td></tr>';
   });
   // Render ungrouped
@@ -2082,7 +2085,15 @@ function genQuote(keepNo){
   buildQuoteDoc(rows, subtotal, discPct, document.getElementById('custName').value||'-', document.getElementById('qdate').value||today(), jobServices(subtotal*(1-discPct/100)-discFlat, totalArea), discFlat, keepNo);
   ckFlash();
 }
+window.qSplitGroups = window.qSplitGroups || {};
 function toggleSplit(){ window.qSplit=!window.qSplit; var b=document.getElementById('splitBtn'); if(b) b.textContent=window.qSplit?'รวมราคา/ชุด':'แยกราคาแต่ละส่วน'; genQuote(true); }
+function toggleGroupSplit(idx){
+  var gn = (window._qGroupKeys||[])[idx];
+  if(gn==null) return;
+  if(window.qSplitGroups[gn]) delete window.qSplitGroups[gn];
+  else window.qSplitGroups[gn] = true;
+  genQuote(true);
+}
 function genQuoteQuick(){
   const list=[...document.querySelectorAll('#q-items .ch')].map(readQuickItem).filter(it=>it&&it.u.a>0);
   if(!list.length){ alert('ยังไม่มีรายการที่กรอกขนาด'); return; }

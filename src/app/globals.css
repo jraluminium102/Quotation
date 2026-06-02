@@ -1,0 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #b3151d;
+  --brand-dark: #7d0f15;
+}
+
+* { font-variant-numeric: tabular-nums; }
+body { font-family: "Sarabun", system-ui, sans-serif; color: #1f2127; }
+
+.bgwrap {
+  background: linear-gradient(135deg, #fbe6e6 0%, #fef4f1 28%, #eef1fb 68%, #eefcf6 100%);
+  min-height: 100dvh;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 12px rgba(31, 33, 39, 0.08), 0 2px 4px rgba(31, 33, 39, 0.04);
+}
+.glass-soft {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+.glass-dark {
+  background: rgba(110, 12, 18, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.press { transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease; }
+.press:active { transform: scale(.97); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(179, 21, 29, .28); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .bgwrap { background: #fff; }
+}

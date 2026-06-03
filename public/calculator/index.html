@@ -930,12 +930,6 @@ function calcUnit(p, w, h, gi, ci, panels, optSel, shipOnly){
     msgs.push('⚠ ไม่รวมเสริมวงกบ/เสริมราง — คิดเพิ่มภายหลัง');
     return {a:A, sell:roundUp(sell), cost:null, addonLabel:'', msgs:[msgs.join(' · ')]};
   }
-    if(p.screen_addon){
-    h+='<label class="opt">ผ้ามุ้ง <select class="o-screenfabric" style="width:auto;height:32px;max-width:280px;"><option value="fiber">ไฟเบอร์ เทา/ดำ (default)</option><option value="cat">กันแมว/หมา สีขาว +800/ตร.ม.</option><option value="rat">สแตน 0.33มม. กันหนู (เงิน/ดำ) +1,200/ตร.ม.</option>';
-    if(p.rates==='IMP23') h+='<option value="safety">นิรภัยสแตน 304 สีดำ 0.8มม. (tier 3,500-3,000)</option>';
-    h+='</select></label>';
-    h+='<span class="opt" style="color:#666;font-size:12px;">⚠ ไม่รวมเสริมวงกบ/ราง</span>';
-  }
     if(p.bar_grid){
     // ระแนงบานเกล็ดอลู ลูกฟูกเรียบ 2 หน้า (ข้อ 38.1)
     // ชิ้น ≤1.5 ม. · ห้ามต่อ · เลือกทิศ ตั้ง/นอน
@@ -1083,10 +1077,6 @@ function calcUnit(p, w, h, gi, ci, panels, optSel, shipOnly){
     const sell = sections * 1500;
     return {a:len, sell:roundUp(sell), cost:null, addonLabel:'',
       msgs:['ใช้จริง '+len+' ม. → '+sections+' ท่อน × 1,500 บ. = '+fmt(sell)]};
-  }
-    if(p.handrail){
-    h+='<label class="opt">ราวจับ (option) <select class="o-handrail" style="width:auto;height:32px;"><option value="">ไม่มี</option><option value="u5">ยู 5 หุน +500/ม.</option><option value="box">กล่อง 1"x2" +600/ม.</option></select></label>';
-    h+='<span class="opt" style="color:#666;font-size:12px;">⚠ กรอกความยาว (ม.) ในช่อง "กว้าง"</span>';
   }
     if(p.gutter_cover){
     // ปิดซ่อนรางน้ำ · ใช้สูตรลูกฟูก 1 ทาง × 0.70 (ลด 30%)
@@ -1619,6 +1609,16 @@ function buildItemOpts(d){
   if(p.ceiling){ h+='<label class="opt">สี <select class="o-ckolor" style="width:auto;height:32px;">'+Object.keys(p.crates).map(function(k){return '<option value="'+k+'">'+k+' ('+fmt(p.crates[k])+'/ตร.ม.)</option>';}).join('')+'</select></label>'; }
   if(p.fin){ h+='<label class="opt">ผิว/สี ระแนง <select class="o-finish" style="width:auto;height:32px;"><option value="0" selected data-n="สีอบขาว">สีอบขาว (default)</option><option value="0" data-n="สีดำ">สีดำ</option><option value="0" data-n="ไม่อบสี">ไม่อบสี</option>'+Object.keys(p.fin).map(function(k){return '<option value="'+p.fin[k]+'" data-n="'+k+'">'+k+' +'+fmt(p.fin[k])+'/ตร.ม.</option>';}).join('')+'</select></label>'; }
   if(p.future_tech){ h+='<label class="opt" style="flex:1 1 100%;">สีฝาตู้ <select class="o-ftcolor" style="width:auto;height:32px;max-width:240px;"><option value="0">ขาว/ดำ (ฟรี)</option>'+COLORS.map(function(c,i){return i>=2?('<option value="'+i+'">'+(c.quoteName||c.n).replace(/[\u2605\u26a0\ud83d\udd16\ud83d\udd12]/g,'').trim()+'</option>'):'';}).join('')+'</select> <span style="font-size:11px;color:#B3151D;">\u26a0 \u0e2a\u0e35\u0e40\u0e2a\u0e49\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e14\u0e39\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e08\u0e23\u0e34\u0e07\u0e01\u0e48\u0e2d\u0e19</span></label>'; }
+  if(p.handrail){
+    h+='<label class="opt">ราวจับ (option) <select class="o-handrail" style="width:auto;height:32px;"><option value="">ไม่มี</option><option value="u5">ยู 5 หุน +500/ม.</option><option value="box">กล่อง 1"x2" +600/ม.</option></select></label>';
+    h+='<span class="opt" style="color:#666;font-size:12px;">⚠ กรอกความยาว (ม.) ในช่อง "กว้าง"</span>';
+  }
+  if(p.screen_addon){
+    h+='<label class="opt">ผ้ามุ้ง <select class="o-screenfabric" style="width:auto;height:32px;max-width:280px;"><option value="fiber">ไฟเบอร์ เทา/ดำ (default)</option><option value="cat">กันแมว/หมา สีขาว +800/ตร.ม.</option><option value="rat">สแตน 0.33มม. กันหนู (เงิน/ดำ) +1,200/ตร.ม.</option>';
+    if(p.rates==='IMP23') h+='<option value="safety">นิรภัยสแตน 304 สีดำ 0.8มม. (tier 3,500-3,000)</option>';
+    h+='</select></label>';
+    h+='<span class="opt" style="color:#666;font-size:12px;">⚠ ไม่รวมเสริมวงกบ/ราง</span>';
+  }
   if(!areaOnly){ h+=`<label class="opt">ครอบวงกบ(ม.) <input type="number" class="o-fcm" step="0.1" min="0" value="0" style="width:58px;height:30px"></label>`+`<label class="opt">ดรอปพื้น(ม.) <input type="number" class="o-dfm" step="0.1" min="0" value="0" style="width:58px;height:30px"></label>`; } else if(['ระแนง','ระแนง-บังตา','ระแนง-ผนัง','ระแนง-เกล็ด','ประตูรั้ว'].includes(p.cat)){ h+=`<label class="opt">ครอบวงกบ(ม.) <input type="number" class="o-fcm" step="0.1" min="0" value="0" style="width:58px;height:30px"></label>`; }
   h+='<label class="opt" style="flex:1 1 100%;border-top:1px dashed #ccc;padding-top:6px;margin-top:4px;">หมายเหตุเพิ่มเติม (เฉพาะบานนี้) <input type="text" class="o-extradesc" placeholder="เช่น สเปกพิเศษ / รายละเอียด..." style="width:300px;height:30px;"></label>';
   const gw=d.querySelector('.i-glass-wrap'), pw=d.querySelector('.i-panels-wrap'), cw=d.querySelector('.i-color-wrap');
@@ -1720,6 +1720,8 @@ function readItem(d){
   if(p.mscolor){ const _msc=d.querySelector('.o-mscolor'); optSel.mscolor=_msc?_msc.value:''; }
   if(p.future_tech){ const _ftc=d.querySelector('.o-ftcolor'); optSel.ftcolor=_ftc?_ftc.value:'0'; }
   if(p.bar_grid){ const _bd=d.querySelector('.o-bgdir'); optSel.bgdir=_bd?_bd.value:'v'; }
+  if(p.handrail){ const _hr=d.querySelector('.o-handrail'); optSel.handrail=_hr?_hr.value:''; }
+  if(p.screen_addon){ const _sf=d.querySelector('.o-screenfabric'); optSel.screenFabric=_sf?_sf.value:'fiber'; }
   if(p.bar_slide){
     const _bd=d.querySelector('.o-bsdoor'); optSel.bsDoor=_bd?_bd.value:'';
     const _bf=d.querySelector('.o-bsfinish'); optSel.bsFinish=_bf?_bf.value:'0';

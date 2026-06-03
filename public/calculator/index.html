@@ -1776,12 +1776,12 @@ function calcQuote(){
   divs.forEach(d=>{
     const it=readItem(d); if(!it)return;
     const lineSell=it.r.sell*it.qty;
-    d.querySelector('.i-area').textContent = it.r.a>0 ? (it.r.a.toFixed(2)+' ตร.ม. · /ชุด '+bht(it.r.sell)+(it.qty>1?(' ×'+it.qty):'')) : '—';
+    d.querySelector('.i-area').textContent = it.r.a>0 ? (it.r.a.toFixed(2)+' ตร.ม. · /ชุด '+bht(it.r.sell)+(it.qty>1?(' ×'+it.qty):'')) : (it.r.sell>0 ? ('เหมาทั้งชุด · '+bht(it.r.sell)+(it.qty>1?(' ×'+it.qty):'')) : '—');
     d.querySelector('.i-price').textContent = bht(lineSell);
     let msg=[...it.r.msgs];
     if(it.r.addonLabel) msg.unshift(it.r.addonLabel);
     d.querySelector('.i-msg').innerHTML = msg.length?('<span style="color:var(--red-dark);font-size:14px;font-weight:600">'+msg.join(' · ')+'</span>'):'';
-    if(it.r.a>0){ subtotal+=lineSell; totalArea+=it.r.a*it.qty;
+    if(it.r.a>0||it.r.sell>0){ subtotal+=lineSell; totalArea+=it.r.a*it.qty;
       if(it.r.cost===null){ costMissing=true; } else { totCost+=it.r.cost*it.qty; }
     }
     if(it.r.msgs.includes('มอเตอร์80กก. ใช้ได้ ≤3.5 ตร.ม.')) warns.push((it.name||'รายการ')+': มอเตอร์ 80กก. เกินขนาด');
@@ -1939,7 +1939,7 @@ function refreshItype(d){
 }
 
 function sendToQuotation(){
-  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&it.r.a>0);
+  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&(it.r.a>0||it.r.sell>0));
   if(!list.length){ alert('ยังไม่มีรายการที่คำนวณได้'); return; }
   const items=list.map(it=>{
     const detail=[it.r.addonLabel, ...(it.r.msgs||[])].filter(Boolean).join(' · ');
@@ -1956,7 +1956,7 @@ function sendToQuotation(){
 }
 
 function genQuote(keepNo){
-  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&it.r.a>0);
+  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&(it.r.a>0||it.r.sell>0));
   if(!list.length){ alert('ยังไม่มีรายการที่กรอกขนาด'); return; }
   // Split into groups and ungrouped
   const groups = {}; const ungrouped = [];
@@ -2141,7 +2141,7 @@ function genQuoteQuick(){
 /* ---- EXPORT EXCEL + WATERMARK ---- */
 function exportQuoteExcel(){
   if(typeof XLSX==='undefined'){ alert('กำลังโหลด library — ลองอีก 2 วินาที'); return; }
-  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&it.r.a>0);
+  const list=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&(it.r.a>0||it.r.sell>0));
   if(!list.length){ alert('ยังไม่มีรายการที่กรอกขนาด'); return; }
   const cust=(document.getElementById('custName').value||'-').trim();
   const date=document.getElementById('qdate').value||today();
@@ -2225,7 +2225,7 @@ function setCmpBase(id){ cmpBase=(cmpBase===id?'':id); calcCompare(); }
 function calcCompare(){
   const budget=parseFloat(document.getElementById('c-budget').value)||0;
   const tbl=document.getElementById('c-table');
-  let items=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&it.r.a>0)
+  let items=[...document.querySelectorAll('#items .ch')].map(readItem).filter(it=>it&&(it.r.a>0||it.r.sell>0))
     .map(it=>({id:it.div.dataset.id, name:(it.name||it.p.name), prod:it.p.name, cat:it.p.cat, size:it.w+'×'+it.h+' ม.', price:it.r.sell}));
   if(cmpCat&&cmpCat!=='*') items=items.filter(it=>it.cat===cmpCat);
   if(!items.length){ tbl.innerHTML='<tr><td>ยังไม่มีรายการ (ตามหมวดที่เลือก) — เพิ่มที่แท็บใบเสนอราคา</td></tr>'; return; }

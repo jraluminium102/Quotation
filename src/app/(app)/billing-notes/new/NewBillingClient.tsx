@@ -7,9 +7,9 @@ import Icon from "@/components/Icon";
 import { baht, suggestInstallments } from "@/lib/money";
 import type { ApprovedQuotation } from "./page";
 
-export default function NewBillingClient({ quotations }: { quotations: ApprovedQuotation[] }) {
+export default function NewBillingClient({ quotations, preselectId }: { quotations: ApprovedQuotation[]; preselectId?: number | null }) {
   const router = useRouter();
-  const [quotationId, setQuotationId] = useState<number | "">(quotations[0]?.id ?? "");
+  const [quotationId, setQuotationId] = useState<number | "">(preselectId ?? quotations[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 

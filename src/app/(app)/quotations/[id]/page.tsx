@@ -38,6 +38,11 @@ export default async function QuotationDetail({ params }: { params: { id: string
           <Link href={`/quotations/${q.id}/print`} className="press inline-flex items-center gap-1.5 glass-soft rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-dark">
             <Icon name="printer" size={16} /> พิมพ์ / PDF
           </Link>
+          {q.status === "approved" && canWrite(profile?.role) && (
+            <Link href={`/billing-notes/new?quotation=${q.id}`} className="press inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white bg-brand shadow-brand">
+              <Icon name="banknote" size={16} /> สร้างใบวางบิล
+            </Link>
+          )}
           {canWrite(profile?.role) && <QuotationActions id={q.id} status={q.status} />}
         </div>
       </div>

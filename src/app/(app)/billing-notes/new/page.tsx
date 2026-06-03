@@ -12,7 +12,11 @@ export type ApprovedQuotation = {
   customer_snapshot: { name: string; job: string };
 };
 
-export default async function NewBillingNotePage() {
+export default async function NewBillingNotePage({
+  searchParams,
+}: {
+  searchParams: { quotation?: string };
+}) {
   const profile = await getProfile();
   if (!canWrite(profile?.role)) redirect("/billing-notes");
 
@@ -23,5 +27,9 @@ export default async function NewBillingNotePage() {
     .eq("status", "approved")
     .order("created_at", { ascending: false });
 
-  return <NewBillingClient quotations={(data ?? []) as ApprovedQuotation[]} />;
+  const list = (data ?? []) as ApprovedQuotation[];
+  const raw = Number(searchParams.quotation);
+  const preselectId = list.some((q) => q.id === raw) ? raw : null;
+
+  return <NewBillingClient quotations={list} preselectId={preselectId} />;
 }
